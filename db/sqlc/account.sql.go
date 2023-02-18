@@ -66,20 +66,41 @@ func (q *Queries) GetAuthor(ctx context.Context, id int64) (Account, error) {
 	return i, err
 }
 
+const getAuthorForUpdate = `-- name: GetAuthorForUpdate :one
+SELECT id, owner, balance, currency, created_at FROM account
+WHERE id = $1 LIMIT 1
+FOR NO KEY UPDATE
+`
+
+func (q *Queries) GetAuthorForUpdate(ctx context.Context, id int64) (Account, error) {
+	row := q.db.QueryRowContext(ctx, getAuthorForUpdate, id)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.Balance,
+		&i.Currency,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listAuthors = `-- name: ListAuthors :many
 SELECT id, owner, balance, currency, created_at FROM account
+WHERE owner = $1
 ORDER BY id
-LIMIT $1
-OFFSET $2
+LIMIT $2
+OFFSET $3
 `
 
 type ListAuthorsParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	Owner  string `json:"owner"`
+	Limit  int32  `json:"limit"`
+	Offset int32  `json:"offset"`
 }
 
 func (q *Queries) ListAuthors(ctx context.Context, arg ListAuthorsParams) ([]Account, error) {
-	rows, err := q.db.QueryContext(ctx, listAuthors, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listAuthors, arg.Owner, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -107,10 +128,11 @@ func (q *Queries) ListAuthors(ctx context.Context, arg ListAuthorsParams) ([]Acc
 	return items, nil
 }
 
-const updateAuthor = `-- name: UpdateAuthor :exec
+const updateAuthor = `-- name: UpdateAuthor :one
 UPDATE account
   set balance = $2
 WHERE id = $1
+RETURNING id, owner, balance, currency, created_at
 `
 
 type UpdateAuthorParams struct {
@@ -118,7 +140,40 @@ type UpdateAuthorParams struct {
 	Balance int64 `json:"balance"`
 }
 
-func (q *Queries) UpdateAuthor(ctx context.Context, arg UpdateAuthorParams) error {
-	_, err := q.db.ExecContext(ctx, updateAuthor, arg.ID, arg.Balance)
-	return err
+func (q *Queries) UpdateAuthor(ctx context.Context, arg UpdateAuthorParams) (Account, error) {
+	row := q.db.QueryRowContext(ctx, updateAuthor, arg.ID, arg.Balance)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.Balance,
+		&i.Currency,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateAuthorBalance = `-- name: UpdateAuthorBalance :one
+UPDATE account
+  set balance = balance + $1 
+WHERE id = $2 
+RETURNING id, owner, balance, currency, created_at
+`
+
+type UpdateAuthorBalanceParams struct {
+	Amount int64 `json:"amount"`
+	ID     int64 `json:"id"`
+}
+
+func (q *Queries) UpdateAuthorBalance(ctx context.Context, arg UpdateAuthorBalanceParams) (Account, error) {
+	row := q.db.QueryRowContext(ctx, updateAuthorBalance, arg.Amount, arg.ID)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.Balance,
+		&i.Currency,
+		&i.CreatedAt,
+	)
+	return i, err
 }

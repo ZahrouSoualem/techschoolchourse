@@ -17,7 +17,7 @@ CREATE TABLE "transfer" (
   "id" bigserial PRIMARY KEY,
   "form_account_id" bigint NOT NULL,
   "to_account_id" bigint NOT NULL,
-  "amount" bigint,
+  "amount" bigint NOT NULL,
   "created_at" timestamptz DEFAULT (now())
 );
 
