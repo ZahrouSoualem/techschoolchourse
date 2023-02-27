@@ -87,20 +87,18 @@ func (q *Queries) GetAuthorForUpdate(ctx context.Context, id int64) (Account, er
 
 const listAuthors = `-- name: ListAuthors :many
 SELECT id, owner, balance, currency, created_at FROM account
-WHERE owner = $1
 ORDER BY id
-LIMIT $2
-OFFSET $3
+LIMIT $1
+OFFSET $2
 `
 
 type ListAuthorsParams struct {
-	Owner  string `json:"owner"`
-	Limit  int32  `json:"limit"`
-	Offset int32  `json:"offset"`
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) ListAuthors(ctx context.Context, arg ListAuthorsParams) ([]Account, error) {
-	rows, err := q.db.QueryContext(ctx, listAuthors, arg.Owner, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listAuthors, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
