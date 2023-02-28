@@ -3,9 +3,8 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
 
-	"github.com/go-playground/validator"
-	_ "github.com/go-playground/validator/v10"
 	db "tutorial.sqlc.dev/app/db/sqlc"
 )
 
@@ -24,6 +23,7 @@ func NewServer(store db.Store) *Server {
 	}
 
 	// add route to this router
+	router.POST("/users", server.createUser)
 
 	router.POST("/accounts", server.createAccount)
 	router.GET("/accounts/:id", server.getAccount)
